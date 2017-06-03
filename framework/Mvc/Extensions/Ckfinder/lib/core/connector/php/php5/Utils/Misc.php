@@ -194,6 +194,7 @@ class CKFinder_Connector_Utils_Misc
             return 0;
         }
         $last = strtolower($val[strlen($val)-1]);
+        $val = CKFinder_Connector_Utils_Misc::typedValue($val);
         switch($last) {
             // The 'G' modifier is available since PHP 5.1.0
             case 'g':
@@ -395,5 +396,18 @@ class CKFinder_Connector_Utils_Misc
         }
 
         return $res;
+    }
+
+    /**
+     * Type conversion for 7.1
+     * used returnBytes
+     * (added Paul)
+     * @static
+     * @access protected
+     * @param string $val
+     * @return integer
+     */
+    protected static function typedValue($val){
+        return (int)preg_replace('/[^0-9,]/', '', $val);
     }
 }
