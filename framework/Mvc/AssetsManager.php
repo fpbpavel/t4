@@ -69,7 +69,7 @@ class AssetsManager
             $baseRealName = pathinfo($realPath, PATHINFO_BASENAME);
             $lastModifiedTime = filemtime($realPath);
         }
-        $pathHash = substr(md5($baseRealPath), 0, 12);
+        $pathHash = sha1($baseRealPath);
         $assetBasePath = ROOT_PATH_PUBLIC . DS . 'Assets' . DS . $pathHash;
         $assetBaseUrl = '/Assets/' . $pathHash;
 

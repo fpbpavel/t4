@@ -51,6 +51,11 @@ class Connection
             $options = $config->options->toArray();
         }
         $pdo = new \PDO($dsn, $config->user, $config->password, $options);
+
+        if (!empty($config->set)){
+            $pdo->exec($config->set);
+        }
+
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(\PDO::ATTR_STATEMENT_CLASS, [Statement::class]);
         return $pdo;

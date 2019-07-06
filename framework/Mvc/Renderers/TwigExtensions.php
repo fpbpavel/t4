@@ -77,6 +77,17 @@ class TwigExtensions
         ];
     }
 
+    public function getTests()
+    {
+        return [
+            new \Twig_SimpleTest('ondisk', function ($file) {
+                $file = trim($file);
+                $file = ROOT_PATH_PUBLIC.$file;
+                return(file_exists($file));
+            }),
+        ];
+    }
+
     protected function helper($name, $args)
     {
         return call_user_func_array('\T4\Html\Helpers::'.$name, $args);
