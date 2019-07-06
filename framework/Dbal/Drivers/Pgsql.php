@@ -17,7 +17,7 @@ class Pgsql
     use TPgsqlQueryBuilder;
     use TPgsqlQuery;
 
-    protected $selectNoQouteTemplate = '~count|avg|group_concat|min|max|sum~i';
+    protected $selectNoQouteTemplate = '~distinct|count|avg|group_concat|min|max|sum~i';
 
     public function quoteName($name)
     {
@@ -116,10 +116,13 @@ class Pgsql
                 $ddl = $options['type'];
                 break;
         }
-
-        if (isset($options['default'])) {
-            $default = 'ALTER TABLE ' . $this->quoteName($table) . ' ALTER COLUMN ' . $name . ' SET DEFAULT \'' . $options['default'] . '\'';
-            return [$name . ' ' . $ddl, $default];
+    
+        if (isset($options['null']) && false === $options['null']) {
+            $ddl .= ' ' . 'NOT NULL';
+        }
+    
+        if(isset($options['default'])) {
+            $ddl .= ' ' . 'DEFAULT' . ' \'' . $options['default'] .'\'';
         }
 
         return $name . ' ' . $ddl;
@@ -131,9 +134,12 @@ class Pgsql
         if (!isset($options['type']))
             $options['type'] = '';
 
-        $ddl = 'INDEX ' . (!empty($name) ? $this->quoteName($name) . ' ' : '') . 'ON ' . $this->quoteName($tableName);
-        if ('unique' == $options['type']) {
-            $ddl = 'UNIQUE ' . $ddl;
+        if ('primary' == $options['type']) {
+            $constraintName = (!empty($name) ? $this->quoteName($name) . ' ' : $this->quoteName($tableName . '_pkey '));
+            $ddl = 'ALTER TABLE ' . $this->quoteName($tableName) . ' ADD CONSTRAINT ' . $constraintName . 'PRIMARY KEY';
+        } else {
+            $indexName = (!empty($name) ? $this->quoteName($name) . ' ' : '');
+            $ddl = 'CREATE ' . (('unique' == $options['type']) ? 'UNIQUE ' : '') . 'INDEX ' . $indexName . 'ON ' . $this->quoteName($tableName);
         }
 
         $driver = $this;
@@ -143,11 +149,12 @@ class Pgsql
         $ddl .= ' (' . implode(', ', $options['columns']) . ')';
 
         if (!empty($options['where'])) {
-            $ddl .= ' WHERE ' . $options['where'];
+            if ('primary' != $options['type']) {
+                $ddl .= ' WHERE ' . $options['where'];
+            }
         }
 
         return $ddl;
-
     }
 
     protected function createTableDDL($tableName, $columns = [], $indexes = [], $extensions = [])
@@ -194,8 +201,11 @@ class Pgsql
             if (is_numeric($name)) {
                 $name = '';
             }
-            $indexesDDL[] = 'CREATE ' . $this->createIndexDDL($tableName, $name, $options);
+            $indexesDDL[] = $this->createIndexDDL($tableName, $name, $options);
             $columnsUsed[] = $options['columns'];
+            if (isset($options['type']) && 'primary' == $options['type']) {
+                $hasPK = true;
+            }
         }
 
         if (!$hasPK) {
@@ -287,7 +297,7 @@ class Pgsql
     public function addIndex(Connection $connection, $tableName, array $indexes)
     {
         foreach ($indexes as $name => $options) {
-            $ddl = 'CREATE ' . $this->createIndexDDL($tableName, is_numeric($name) ? '' : $name, $options);
+            $ddl = $this->createIndexDDL($tableName, is_numeric($name) ? '' : $name, $options);
             $connection->execute($ddl);
         }
     }

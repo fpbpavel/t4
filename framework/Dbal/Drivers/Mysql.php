@@ -17,7 +17,7 @@ class Mysql
     use TMysqlQueryBuilder;
     use TMysqlQuery;
 
-    protected $selectNoQouteTemplate = '~count|avg|group_concat|min|max|sum~i';
+    protected $selectNoQouteTemplate = '~distinct|count|avg|group_concat|min|max|sum~i';
 
     public function quoteName($name)
     {
@@ -58,7 +58,7 @@ class Mysql
                 break;
             case 'relation':
             case 'link':
-                $ddl = 'BIGINT UNSIGNED NULL DEFAULT NULL';
+                $ddl = 'BIGINT UNSIGNED';
                 break;
             case 'serial':
                 $ddl = 'SERIAL';
@@ -136,9 +136,13 @@ class Mysql
                 $ddl = $options['type'];
                 break;
         }
-
+    
+        if (isset($options['null']) && false === $options['null']) {
+            $ddl .= ' ' . 'NOT NULL';
+        }
+        
         if(isset($options['default'])) {
-            $ddl .= ' ' . 'NOT NULL DEFAULT' . ' \'' . $options['default'] .'\'';
+            $ddl .= ' ' . 'DEFAULT' . ' \'' . $options['default'] .'\'';
         }
 
         return $name . ' ' . $ddl;

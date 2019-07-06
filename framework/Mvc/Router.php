@@ -67,6 +67,12 @@ class Router
                         if (!($route instanceof Route)) {
                             $route = new Route($route);
                         }
+                        if (empty($route->action)) {
+                            $route->action = self::DEFAULT_ACTION;
+                        }
+                        if (empty($route->params)) {
+                            $route->params = new Route([]);
+                        }
                         if (empty($route->format)) {
                             $route->format = $request->extension ?: $this->allowedExtensions[0];
                         }
@@ -106,7 +112,7 @@ class Router
         }
 
         $parts = parse_url($path);
-        $basePath = isset($parts['path']) ? $parts['path'] : null;
+        $basePath = !empty($parts['path']) ? $parts['path'] : '/';
 
         if (empty($basePath)) {
             $extension = null;
@@ -274,6 +280,26 @@ class Router
                     'format' => $url->extension ?: 'html',
                 ]);
             }
+        }
+
+        if ($app->existsController(null, implode('\\', $urlParts))) {
+            return new Route([
+                'module' => '',
+                'controller' => implode('\\', array_map('ucfirst', $urlParts)),
+                'action' => self::DEFAULT_ACTION,
+                'params' => [],
+                'format' => $url->extension ?: 'html',
+            ]);
+        }
+
+        if ($app->existsController(null, implode('\\', array_slice($urlParts, 0, -1)))) {
+            return new Route([
+                'module' => '',
+                'controller' => implode('\\', array_map('ucfirst', array_slice($urlParts, 0, -1))),
+                'action' => ucfirst(array_pop($urlParts)),
+                'params' => [],
+                'format' => $url->extension ?: 'html',
+            ]);
         }
 
         throw new RouterException('Route to path \'' . $url->basepath . '\' is not found');
